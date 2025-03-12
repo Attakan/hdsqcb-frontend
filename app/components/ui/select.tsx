@@ -6,14 +6,14 @@ interface SelectProps {
   onValueChange: (value: string) => void;
 }
 
-interface SelectTriggerProps {
+interface SelectTriggerProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
   children: ReactNode;
 }
 
 interface SelectItemProps {
   value: string;
   children: ReactNode;
-  onSelect: (value: string) => void;
+  onSelect?: (value: string) => void; // made onSelect optional to allow prop injection
 }
 
 interface SelectValueProps {
@@ -39,7 +39,7 @@ export const Select: React.FC<SelectProps> = ({ children, onValueChange }) => {
         <SelectContent>
           {React.Children.map(children, (child) =>
             React.isValidElement(child)
-              ? React.cloneElement(child, { onSelect: handleSelect })
+              ? React.cloneElement(child as React.ReactElement<SelectItemProps>, { onSelect: handleSelect })
               : null
           )}
         </SelectContent>
@@ -67,7 +67,7 @@ export const SelectContent: React.FC<{ children: ReactNode }> = ({ children }) =
 export const SelectItem: React.FC<SelectItemProps> = ({ value, children, onSelect }) => {
   return (
     <div
-      onClick={() => onSelect(value)}
+      onClick={() => onSelect && onSelect(value)}
       className="cursor-pointer p-2 hover:bg-gray-200"
     >
       {children}

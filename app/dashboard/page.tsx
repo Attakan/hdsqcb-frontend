@@ -18,7 +18,9 @@ import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 
 // Set base URL to localhost
-const API_BASE_URL = "https://attakan.pythonanywhere.com/";
+const API_BASE_URL = typeof window !== 'undefined' 
+  ? "https://attakan.pythonanywhere.com/" 
+  : process.env.NEXT_PUBLIC_API_URL || "https://attakan.pythonanywhere.com/";
 
 const COLORS = [
   "#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8",
@@ -59,7 +61,8 @@ function isWithin6Days(dateStr) {
   if (isNaN(modifiedDate.getTime())) return false;
   
   const now = new Date();
-  const diffMs = now - modifiedDate; // milliseconds difference
+  // Fix this line to use getTime() method
+  const diffMs = now.getTime() - modifiedDate.getTime(); // milliseconds difference
   const diffDays = diffMs / (1000 * 60 * 60 * 24);
   return diffDays <= 6;
 }
@@ -182,7 +185,7 @@ const PermissionManagement = () => {
   const handleInputChange = (e) => {
     setEditForm({ ...editForm, [e.target.name]: e.target.value });
   };
-
+  
   /** Save changes to user */
   const handleSave = () => {
     if (!editingUser) return;
