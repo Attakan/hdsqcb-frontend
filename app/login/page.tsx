@@ -4,7 +4,7 @@ import React, { useState } from 'react';
 import { ArrowLeft } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
-const API_BASE_URL = "https://attakan.pythonanywhere.com/";
+const API_BASE_URL = "https://attakan.pythonanywhere.com";
 
 const PageContainer = (props) => (
   <div 
