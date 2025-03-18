@@ -17,10 +17,12 @@ import "react-datepicker/dist/react-datepicker.css";
 import * as XLSX from "xlsx";
 import { saveAs } from "file-saver";
 
+const API_BASE_URL = "https://attakan.pythonanywhere.com/";
+
 // Set base URL to localhost
-const API_BASE_URL = typeof window !== 'undefined' 
-  ? "https://attakan.pythonanywhere.com/" 
-  : process.env.NEXT_PUBLIC_API_URL || "https://attakan.pythonanywhere.com/";
+//const API_BASE_URL = typeof window !== 'undefined' 
+  //? "https://attakan.pythonanywhere.com/" 
+  //: process.env.NEXT_PUBLIC_API_URL || "https://attakan.pythonanywhere.com/";
 
 const COLORS = [
   "#0088FE", "#00C49F", "#FFBB28", "#FF8042", "#8884d8",
@@ -231,6 +233,7 @@ const PermissionManagement = () => {
     setEditingUser(null);
   };
 
+
   return (
     <div className="bg-white p-4 rounded-lg shadow text-black">
       <h1 className="text-xl font-semibold mb-4">User Management</h1>
@@ -396,50 +399,50 @@ const ProfileSettings = () => {
   const [error, setError] = useState(null);
 
   // Fetch user profile on mount
-  useEffect(() => {
-    const fetchUserProfile = async () => {
-      setLoading(true);
-      setError(null);
-      try {
-        const storedUser = localStorage.getItem("user");
-        if (!storedUser) {
-          throw new Error("No user found in localStorage. Make sure you are logged in.");
-        }
-        const userData = JSON.parse(storedUser);
-        if (!userData.user_id) {
-          throw new Error("No user_id found in localStorage. Check your login flow.");
-        }
-        const response = await fetch(`${API_BASE_URL}/profile/${userData.user_id}`);
-        if (!response.ok) {
-          throw new Error(`Failed to fetch user. Status: ${response.status}`);
-        }
-        const data = await response.json();
-        setProfile((prev) => ({
-          ...prev,
-          user_id: data.user_id || "",
-          username: data.username || "",
-          password_hash: data.password_hash || "",
-          name: data.name || "",
-          surname: data.surname || "",
-          fullname: data.fullname || "",
-          job_description: data.job_description || "",
-          email: data.email || "",
-          supplier_code: data.supplier_code || "",
-          role: data.role || "",
-        }));
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
+useEffect(() => {
+  const fetchUserProfile = async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const storedUser = localStorage.getItem("user");
+      if (!storedUser) {
+        throw new Error("No user found in localStorage. Make sure you are logged in.");
       }
-    };
-    fetchUserProfile();
-  }, []);
+      const userData = JSON.parse(storedUser);
+      if (!userData.user_id) {
+        throw new Error("No user_id found in localStorage. Check your login flow.");
+      }
+      const response = await fetch(`${API_BASE_URL}/profile/${userData.user_id}`);
+      if (!response.ok) {
+        throw new Error(`Failed to fetch user. Status: ${response.status}`);
+      }
+      const data = await response.json();
+      setProfile((prev) => ({
+        ...prev,
+        user_id: data.user_id || "",
+        username: data.username || "",
+        password_hash: "", // Initialize as empty string rather than using value from backend
+        name: data.name || "",
+        surname: data.surname || "",
+        fullname: data.fullname || "",
+        job_description: data.job_description || "",
+        email: data.email || "",
+        supplier_code: data.supplier_code || "",
+        role: data.role || "",
+      }));
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+  fetchUserProfile();
+}, []);
 
   /** Handle field input changes */
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setProfile((prev) => ({ ...prev, [name]: value || "" }));
+    setProfile((prev) => ({ ...prev, [name]: value }));
   };
 
   /** Handle checkbox changes */
@@ -459,21 +462,31 @@ const ProfileSettings = () => {
     e.preventDefault();
     setError(null);
     try {
+      // Create the payload object - start with all fields except password
+      const payload = {
+        username: profile.username || "",
+        name: profile.name || "",
+        surname: profile.surname || "",
+        fullname: profile.fullname || "",
+        job_description: profile.job_description || "",
+        email: profile.email || "",
+        supplier_code: profile.supplier_code || "",
+        role: profile.role || "",
+      };
+      
+      // Create a copy of the profile object
+      const updatedProfile = { ...profile };
+      // Only include password_hash if it's not empty
+      if (!updatedProfile.password_hash || updatedProfile.password_hash.trim() === "") {
+        delete updatedProfile.password_hash;
+      }
+      
       const response = await fetch(`${API_BASE_URL}/profile/${profile.user_id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          username: profile.username || "",
-          password_hash: profile.password_hash || "",
-          name: profile.name || "",
-          surname: profile.surname || "",
-          fullname: profile.fullname || "",
-          job_description: profile.job_description || "",
-          email: profile.email || "",
-          supplier_code: profile.supplier_code || "",
-          role: profile.role || "",
-        }),
+        body: JSON.stringify(updatedProfile),
       });
+      
       if (!response.ok) {
         const errData = await response.json();
         throw new Error(errData.error || "Failed to update profile");
@@ -481,6 +494,28 @@ const ProfileSettings = () => {
       alert("Profile updated successfully!");
     } catch (err) {
       setError(err.message);
+    }
+  };
+
+  // Add this function to the ProfileSettings component
+  const handleLogout = () => {
+    // Get the user from localStorage
+    const storedUser = localStorage.getItem("user");
+    if (storedUser) {
+      const userData = JSON.parse(storedUser);
+      
+      // Call the logout API (optional, depends on your backend implementation)
+      fetch(`${API_BASE_URL}/auth/logout`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ user_id: userData.user_id }),
+      }).catch(err => console.error("Logout error:", err));
+      
+      // Clear localStorage
+      localStorage.removeItem("user");
+      
+      // Redirect to login page or home
+      window.location.href = "/login"; // Adjust the path as needed
     }
   };
 
@@ -649,7 +684,12 @@ const ProfileSettings = () => {
           <Button type="submit" className="flex items-center justify-center gap-2 bg-indigo-500 text-white w-full h-12 rounded">
             <Save className="mr-2 h-6 w-6" /> Save Changes
           </Button>
-
+          <Button
+            onClick={handleLogout}
+            className="bg-yellow-500 hover:bg-yellow-600 text-white w-full h-10 rounded"
+          >
+            Log Out
+          </Button>
           <Button
             onClick={handleDeleteProfile}
             className="bg-red-500 text-white w-full rounded"
@@ -701,15 +741,32 @@ const SupplierChargebackPreview = ({ item, onClose }) => {
   // When the edit modal opens, format date fields so they are always a "YYYY-MM-DD" string
   useEffect(() => {
     if (isEditModalOpen) {
-      setEditItem({
+      // Ensure we format dates consistently and preserve all fields
+      const formattedItem = {
         ...item,
         sqcb_id: item.sqcb_id,
-        feedback_date: item.feedback_date
-          ? format(new Date(item.feedback_date), "yyyy-MM-dd")
-          : "",
-        target_date: item.target_date
-          ? format(new Date(item.target_date), "yyyy-MM-dd")
-          : "",
+        // Explicitly format all date fields
+        feedback_date: item.feedback_date 
+          ? format(new Date(item.feedback_date), "yyyy-MM-dd") 
+          : null,
+        target_date: item.target_date 
+          ? format(new Date(item.target_date), "yyyy-MM-dd") 
+          : null,
+        qm10_complete_date: item.qm10_complete_date 
+          ? format(new Date(item.qm10_complete_date), "yyyy-MM-dd") 
+          : null,
+        dn_issued_date: item.dn_issued_date 
+          ? format(new Date(item.dn_issued_date), "yyyy-MM-dd") 
+          : null,
+      };
+      setEditItem(formattedItem);
+      
+      // Log the formatted dates for debugging
+      console.log("Edit form initialized with dates:", {
+        feedback_date: formattedItem.feedback_date,
+        target_date: formattedItem.target_date,
+        qm10_complete_date: formattedItem.qm10_complete_date,
+        dn_issued_date: formattedItem.dn_issued_date
       });
     }
   }, [isEditModalOpen, item]);
@@ -740,7 +797,15 @@ const SupplierChargebackPreview = ({ item, onClose }) => {
 
   /** Show pictures modal */
   const openPicturesModal = (pictures) => {
-    setSelectedPictures(pictures);
+    // Filter out pictures with empty/invalid addresses
+    const validPictures = pictures.filter(pic => pic.picture_address && pic.picture_address.trim() !== '');
+    
+    if (validPictures.length > 0) {
+      setSelectedPictures(validPictures);
+    } else {
+      // Maybe show a message that no valid pictures are available
+      alert("No valid pictures available for this item.");
+    }
   };
   /** Close pictures modal */
   const closePicturesModal = () => {
@@ -753,7 +818,15 @@ const SupplierChargebackPreview = ({ item, onClose }) => {
       // For file inputs
       setEditItem((prev) => ({ ...prev, [field]: e.target.files }));
     } else {
-      setEditItem((prev) => ({ ...prev, [field]: e.target.value || "" }));
+      // Preserve existing values for key fields if empty
+      const value = e.target.value;
+      
+      if ((field === 'feedback_date' || field === 'target_date') && value === "") {
+        // Don't update if the value would be empty for date fields
+        console.log(`Preserving ${field} because value is empty`);
+      } else {
+        setEditItem((prev) => ({ ...prev, [field]: value }));
+      }
     }
   };
 
@@ -825,6 +898,11 @@ const SupplierChargebackPreview = ({ item, onClose }) => {
       alert("Disposition is required.");
       return;
     }
+    // Debugging - add these logs
+    console.log("Before form submission - dates:", {
+      feedback_date: editItem.feedback_date,
+      target_date: editItem.target_date
+    });
     const formData = new FormData();
     // Basic fields
     formData.append("sqcb", editItem.sqcb || "");
@@ -848,6 +926,27 @@ const SupplierChargebackPreview = ({ item, onClose }) => {
     formData.append("second_po_no", editItem.second_po_no || "");
     formData.append("second_obd_no", editItem.second_obd_no || "");
     formData.append("comments", editItem.comments || "");
+
+    if (editItem.feedback_date) {
+      formData.append("feedback_date", editItem.feedback_date);
+    }
+    
+    if (editItem.target_date) {
+      formData.append("target_date", editItem.target_date);
+    }
+    
+    if (editItem.qm10_complete_date) {
+      formData.append("qm10_complete_date", editItem.qm10_complete_date);
+    }
+    
+    if (editItem.dn_issued_date) {
+      formData.append("dn_issued_date", editItem.dn_issued_date);
+    }
+    
+    // Log what's actually in the FormData
+    for (let [key, value] of formData.entries()) {
+      console.log(`${key}: ${value}`);
+    }
 
     // Parts
     const partsWithItemNumber = editItem.parts.map((part, index) => ({
@@ -873,6 +972,10 @@ const SupplierChargebackPreview = ({ item, onClose }) => {
       });
     }
 
+    for (let pair of formData.entries()) {
+      console.log(pair[0] + ": " + pair[1]);
+    }
+
     fetch(`${API_BASE_URL}/sqcb/${editItem.sqcb_id}`, {
       method: "PUT",
       body: formData,
@@ -894,6 +997,31 @@ const SupplierChargebackPreview = ({ item, onClose }) => {
       .catch((error) => {
         console.error("Error updating SQCB:", error);
       });
+  };
+
+  // In your SupplierChargebackPreview component for edit mode:
+  const handlePartNumberChange = (e, index) => {
+    const partNumber = e.target.value;
+    const newParts = [...editItem.parts];
+    newParts[index].part_number = partNumber;
+    setEditItem({ ...editItem, parts: newParts });
+    
+    // If part number exists, fetch the part name
+    if (partNumber) {
+      fetch(`${API_BASE_URL}/part/${partNumber}`)
+        .then(response => {
+          if (response.ok) return response.json();
+          throw new Error(`Error: ${response.status}`);
+        })
+        .then(data => {
+          if (data.part_name) {
+            const updatedParts = [...editItem.parts];
+            updatedParts[index].part_name = data.part_name;
+            setEditItem(prev => ({ ...prev, parts: updatedParts }));
+          }
+        })
+        .catch(error => console.error("Error fetching part name:", error));
+    }
   };
 
   const parts = Array.isArray(item.parts) ? item.parts : [];
@@ -966,19 +1094,33 @@ const SupplierChargebackPreview = ({ item, onClose }) => {
                     <td className="p-2">{part.notification_number || ""}</td>
                     <td className="p-2">{part.qty ?? ""}</td>
                     <td className="p-2">
-                      {part.pictures && part.pictures.length > 0 ? (
-                        <button
-                          className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded text-xs"
-                          onClick={() => openPicturesModal(part.pictures)}
-                        >
-                          View {part.pictures.length} Picture
-                          {part.pictures.length > 1 ? "s" : ""}
-                        </button>
-                      ) : (
-                        <button className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-1 px-2 rounded text-xs">
-                          Attach
-                        </button>
-                      )}
+                    {part.pictures && part.pictures.length > 0 ? (
+                      (() => {
+                        const validPictures = part.pictures.filter(pic => pic.picture_address && pic.picture_address.trim() !== '');
+                        const validCount = validPictures.length;
+                        
+                        if (validCount > 0) {
+                          return (
+                            <button
+                              className="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-2 rounded text-xs"
+                              onClick={() => openPicturesModal(validPictures)}
+                            >
+                              View {validCount} Picture{validCount > 1 ? "s" : ""}
+                            </button>
+                          );
+                        } else {
+                          return (
+                            <button className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-1 px-2 rounded text-xs">
+                              No Attach
+                            </button>
+                          );
+                        }
+                      })()
+                    ) : (
+                      <button className="bg-gray-200 hover:bg-gray-300 text-gray-800 font-bold py-1 px-2 rounded text-xs">
+                        Attach
+                      </button>
+                    )}
                     </td>
                   </tr>
                 ))}
@@ -1070,16 +1212,22 @@ const SupplierChargebackPreview = ({ item, onClose }) => {
               </button>
               <h3 className="text-lg font-bold mb-4">Attached Pictures</h3>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {selectedPictures.map((picture, idx) => (
-                  <div key={picture.id || idx} className="text-center">
+              {selectedPictures.map((picture, idx) => (
+                <div key={picture.id || idx} className="text-center">
+                  {picture.picture_address ? (
                     <img
-                      src={picture.picture_address || ""}
+                      src={picture.picture_address}
                       alt={`Picture ${idx + 1}`}
                       className="w-full h-auto object-cover mb-2"
                     />
-                    <p className="text-sm">{picture.picture_name || ""}</p>
-                  </div>
-                ))}
+                  ) : (
+                    <div className="w-full h-48 flex items-center justify-center bg-gray-200 mb-2">
+                      <span>No image available</span>
+                    </div>
+                  )}
+                  <p className="text-sm">{picture.picture_name || ""}</p>
+                </div>
+              ))}
               </div>
               <button
                 className="mt-4 bg-red-500 hover:bg-red-700 text-white font-bold py-2 px-4 rounded"
@@ -1264,7 +1412,7 @@ const SupplierChargebackPreview = ({ item, onClose }) => {
                               <input
                                 type="text"
                                 value={part.part_number || ""}
-                                onChange={(e) => handleEditPartChange(e, index, "part_number")}
+                                onChange={(e) => handlePartNumberChange(e, index)}
                                 className="border p-1 w-full"
                                 placeholder="Part Number"
                               />
@@ -1273,9 +1421,9 @@ const SupplierChargebackPreview = ({ item, onClose }) => {
                               <input
                                 type="text"
                                 value={part.part_name || ""}
-                                onChange={(e) => handleEditPartChange(e, index, "part_name")}
-                                className="border p-1 w-full"
-                                placeholder="Part Name"
+                                readOnly
+                                className="border p-1 w-full bg-gray-100"
+                                placeholder="Part Name (Auto-filled)"
                               />
                             </td>
                             <td className="p-2">
@@ -1346,16 +1494,18 @@ const SupplierChargebackPreview = ({ item, onClose }) => {
                     <DatePicker
                       selected={editItem.feedback_date ? new Date(editItem.feedback_date) : null}
                       onChange={(date) => {
-                        const formattedFeedback = format(date, "yyyy-MM-dd");
-                        const formattedTarget = format(addDays(date, 6), "yyyy-MM-dd");
-                        handleEditInputChange(
-                          { target: { value: formattedFeedback } },
-                          "feedback_date"
-                        );
-                        handleEditInputChange(
-                          { target: { value: formattedTarget } },
-                          "target_date"
-                        );
+                        if (date) {
+                          // Format date and update both dates
+                          const formattedFeedback = format(date, "yyyy-MM-dd");
+                          const formattedTarget = format(addDays(date, 6), "yyyy-MM-dd");
+                          
+                          // Update both dates simultaneously to keep them in sync
+                          setEditItem(prev => ({
+                            ...prev,
+                            feedback_date: formattedFeedback,
+                            target_date: formattedTarget
+                          }));
+                        }
                       }}
                       dateFormat="yyyy-MM-dd"
                       placeholderText="Select Feedback Date"
@@ -2387,6 +2537,52 @@ const ComprehensiveDashboard = () => {
       });
   };
 
+  // In your ComprehensiveDashboard component
+
+  // Update your useEffect for retrieving user data
+  useEffect(() => {
+    const fetchUserData = async () => {
+      try {
+        const storedUser = localStorage.getItem("user");
+        if (storedUser) {
+          const userData = JSON.parse(storedUser);
+          
+          // First set basic user data from localStorage
+          setUser(userData);
+          
+          // If we have a user_id, fetch the complete profile data
+          if (userData.user_id) {
+            const response = await fetch(`${API_BASE_URL}/profile/${userData.user_id}`);
+            if (response.ok) {
+              const profileData = await response.json();
+              
+              // Update user state with complete profile data including supplier name
+              if (profileData.supplier_code) {
+                // If supplier code exists but no supplier name, fetch it
+                if (!profileData.supplier_name && profileData.supplier_code) {
+                  const supplierResponse = await fetch(`${API_BASE_URL}/suppliers/${profileData.supplier_code}`);
+                  if (supplierResponse.ok) {
+                    const supplierData = await supplierResponse.json();
+                    profileData.supplier_name = supplierData.supplier_name;
+                  }
+                }
+              }
+              
+              // Update the user state with complete data
+              setUser(profileData);
+            }
+          }
+        } else {
+          setUser({ name: "Guest", role: "Supplier" });
+        }
+      } catch (error) {
+        console.error("Error fetching user data:", error);
+      }
+    };
+    
+    fetchUserData();
+  }, []);
+
   // Fetch the list of users (if not already fetched globally)
   const [hdUsers, setHdUsers] = useState([]);
 
@@ -2521,13 +2717,38 @@ const ComprehensiveDashboard = () => {
       !item.obd_no
   ).length;
 
+  // In your main component for creating a new item
+  const handlePartNumberChange = (e, index) => {
+    const partNumber = e.target.value;
+    const newParts = [...newItem.parts];
+    newParts[index].part_number = partNumber;
+    setNewItem({ ...newItem, parts: newParts });
+    
+    // If part number exists, fetch the part name
+    if (partNumber) {
+      fetch(`${API_BASE_URL}/part/${partNumber}`)
+        .then(response => {
+          if (response.ok) return response.json();
+          throw new Error(`Error: ${response.status}`);
+        })
+        .then(data => {
+          if (data.part_name) {
+            const updatedParts = [...newItem.parts];
+            updatedParts[index].part_name = data.part_name;
+            setNewItem(prev => ({ ...prev, parts: updatedParts }));
+          }
+        })
+        .catch(error => console.error("Error fetching part name:", error));
+    }
+  };
+
   // Suppose you build your data array like this:
   const defectQuantityData = [
     { name: "New SQCB", value: newSQCBCount },
     { name: "Waiting RMA", value: waitingRMACount },
     { name: "Received RMA", value: receivedRMACount },
   ];
-
+  
   
   // Dynamically build nav items based on user.role
   let navItems = [];
@@ -2597,7 +2818,7 @@ const ComprehensiveDashboard = () => {
             <Menu size={24} />
           </button>
           <div>
-            <h1 className="text-2xl font-bold">Hi {user.name || "User"}</h1>
+            <h1 className="text-2xl font-bold">Hi {user.name || user.fullname || "User"}</h1>
             <p className="text-sm text-gray-500">
               Supplier Code: {user.supplier_code || "--"} &nbsp;
               Supplier Name: {user.supplier_name || "--"} &nbsp;
@@ -2781,17 +3002,17 @@ const ComprehensiveDashboard = () => {
 
           {activeTab === "sqcbFullReport" && (
             <div className="bg-white p-4 rounded-lg shadow">
-              <div className="flex justify-between items-center mb-4">
+              <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-4 space-y-2 md:space-y-0">
                 <h2 className="text-xl font-semibold text-black">SQCB OVERVIEW DETAIL</h2>
-                <div className="flex items-center space-x-2">
+                <div className="flex flex-col sm:flex-row w-full md:w-auto items-center space-y-2 sm:space-y-0 sm:space-x-2">
                   <input
                     type="text"
                     placeholder="Search..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="border p-2 rounded text-black"
+                    className="border p-2 rounded text-black w-full sm:w-64"
                   />
-                  <button className="bg-blue-500 text-white px-4 py-2 rounded">Search</button>
+                  <button className="bg-blue-500 text-white px-4 py-2 rounded w-full sm:w-auto">Search</button>
                 </div>
               </div>
               {renderTable(filteredSqcbData)}
@@ -2806,7 +3027,7 @@ const ComprehensiveDashboard = () => {
         </main>
         <div className="ml-auto p-4 text-gray-500">
           <span className="text-sm">HD-SQCB </span>
-          <span className="text-sm text-gray-600">Version 1.1.0001 </span>
+          <span className="text-sm text-gray-600">Version 1.1.0002 </span>
         </div>        
       </div>
 
@@ -2980,7 +3201,7 @@ const ComprehensiveDashboard = () => {
                             <input
                               type="text"
                               value={part.part_number || ""}
-                              onChange={(e) => handlePartChange(e, index, "part_number")}
+                              onChange={(e) => handlePartNumberChange(e, index)}
                               className="border p-1 w-full"
                               placeholder="Part Number"
                             />
@@ -2989,9 +3210,9 @@ const ComprehensiveDashboard = () => {
                             <input
                               type="text"
                               value={part.part_name || ""}
-                              onChange={(e) => handlePartChange(e, index, "part_name")}
-                              className="border p-1 w-full"
-                              placeholder="Part Name"
+                              readOnly
+                              className="border p-1 w-full bg-gray-100"
+                              placeholder="Part Name (Auto-filled)"
                             />
                           </td>
                           <td className="p-2">
