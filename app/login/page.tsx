@@ -8,16 +8,15 @@ const API_BASE_URL = "https://attakan.pythonanywhere.com/";
 
 const PageContainer = (props) => (
   <div 
-    className="flex items-center justify-center min-h-screen bg-cover bg-center bg-no-repeat"
+    className="flex min-h-screen bg-cover bg-center bg-no-repeat w-full"
     style={{
       backgroundImage: "url('/images/LoginBG-01.png')",
     }}
   >
-    <div 
-      className="absolute top-1/2 transform -translate-y-1/2 bg-white p-8 rounded-lg shadow-md w-96 bg-opacity-90"
-      style={{ left: '15%' }}  // Change this percentage as needed
-    >
-      {props.children}
+    <div className="w-full px-4 flex md:justify-start justify-center items-center min-h-screen">
+      <div className="bg-white p-6 md:p-8 rounded-lg shadow-md w-full mx-3 md:mx-0 md:ml-[15%] max-w-md bg-opacity-90">
+        {props.children}
+      </div>
     </div>
   </div>
 );
@@ -78,82 +77,81 @@ const LoginPage = ({ setPage }) => {
 
   return (
     <div 
-      className="flex items-center justify-center min-h-screen bg-cover bg-center bg-no-repeat"
+      className="flex min-h-screen bg-cover bg-center bg-no-repeat w-full"
       style={{
         backgroundImage: "url('/images/LoginBG-01.png')",
       }}
     >
-      <div 
-        className="absolute top-1/2 transform -translate-y-1/2 bg-white p-8 rounded-lg shadow-md w-96 bg-opacity-90"
-        style={{ left: '15%' }}
-      >
-        <h2 className="text-2xl font-bold mb-6 text-center text-black">
-          Welcome to Harley Davidson Supplier Quality Tracking
-        </h2>
-        <h3 className="text-xl font-semibold mb-4 text-center">Log-in</h3>
-        
-        {error && (
-          <div className="mb-4 p-2 bg-red-100 border border-red-400 text-red-700 rounded">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSignIn}>
-          <div className="mb-4">
-            <label htmlFor="username" className="block text-sm font-medium text-gray-700">
-              USERNAME
-            </label>
-            <input
-              type="text"
-              id="username"
-              name="username"
-              value={formData.username}
-              onChange={handleInputChange}
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
-              placeholder="Your Username"
-              required
-            />
-          </div>
+      <div className="w-full px-4 flex md:justify-start justify-center items-center min-h-screen">
+        <div className="bg-white p-6 md:p-8 rounded-lg shadow-md w-full mx-3 md:mx-0 md:ml-[15%] max-w-md bg-opacity-90">
+          <h2 className="text-lg md:text-xl lg:text-2xl font-bold mb-4 md:mb-6 text-center text-black">
+            Welcome to Harley Davidson Supplier Quality Tracking
+          </h2>
+          <h3 className="text-lg md:text-xl font-semibold mb-4 text-center">Log-in</h3>
           
-          <div className="mb-6">
-            <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-              PASSWORD
-            </label>
-            <input
-              type="password"
-              id="password"
-              name="password"
-              value={formData.password}
-              onChange={handleInputChange}
-              className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
-              placeholder="********"
-              required
-            />
+          {error && (
+            <div className="mb-4 p-2 bg-red-100 border border-red-400 text-red-700 rounded">
+              {error}
+            </div>
+          )}
+
+          <form onSubmit={handleSignIn}>
+            <div className="mb-4">
+              <label htmlFor="username" className="block text-sm font-medium text-gray-700">
+                USERNAME
+              </label>
+              <input
+                type="text"
+                id="username"
+                name="username"
+                value={formData.username}
+                onChange={handleInputChange}
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+                placeholder="Your Username"
+                required
+              />
+            </div>
+            
+            <div className="mb-6">
+              <label htmlFor="password" className="block text-sm font-medium text-gray-700">
+                PASSWORD
+              </label>
+              <input
+                type="password"
+                id="password"
+                name="password"
+                value={formData.password}
+                onChange={handleInputChange}
+                className="mt-1 block w-full border border-gray-300 rounded-md shadow-sm p-2"
+                placeholder="********"
+                required
+              />
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className={`w-full bg-orange-500 text-white py-2 px-4 rounded-md hover:bg-orange-600 
+                ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
+            >
+              {loading ? 'Signing in...' : 'SIGNIN'}
+            </button>
+          </form>
+
+          <div className="mt-4 flex justify-between text-sm">
+            <button 
+              onClick={() => setPage('register')} 
+              className="text-blue-600 hover:underline"
+            >
+              Register Email
+            </button>
+            <button 
+              onClick={() => setPage('forgotPassword')} 
+              className="text-blue-600 hover:underline"
+            >
+              Forgot Password?
+            </button>
           </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className={`w-full bg-orange-500 text-white py-2 px-4 rounded-md hover:bg-orange-600 
-              ${loading ? 'opacity-50 cursor-not-allowed' : ''}`}
-          >
-            {loading ? 'Signing in...' : 'SIGNIN'}
-          </button>
-        </form>
-
-        <div className="mt-4 flex justify-between text-sm">
-          <button 
-            onClick={() => setPage('register')} 
-            className="text-blue-600 hover:underline"
-          >
-            Register Email
-          </button>
-          <button 
-            onClick={() => setPage('forgotPassword')} 
-            className="text-blue-600 hover:underline"
-          >
-            Forgot Password?
-          </button>
         </div>
       </div>
     </div>
